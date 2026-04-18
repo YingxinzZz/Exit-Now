@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Exit Now</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+
+:root{
+  --paper:#f2efe9;
+  --paper-2:#ebe7df;
+  --ink:#0a0a0a;
+  --ink-mute:#b8b3a8;
+  --ink-mute-2:#d7d2c6;
+  --dark:#0b0b0b;
+  --dark-2:#141414;
+  --snow:#f2efe9;
+  --snow-mute:#5a5751;
+  --snow-mute-2:#2e2d2a;
+}
+
+body{
+  font-family:"Helvetica Neue","Helvetica","Arial",sans-serif;
+  background:#1a1a1a;
+  color:var(--ink);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  padding:40px 20px;
+}
+
+/* iPhone 外壳 */
+.phone-frame{
+  position:relative;
+  width:430px;
+  height:932px;
+  background:#1c1c1e;
+  border-radius:55px;
+  padding:12px;
+  box-shadow:
+    0 0 0 2px #2c2c2e,
+    0 0 0 3px #1c1c1e,
+    0 20px 60px rgba(0,0,0,0.5),
+    0 40px 100px rgba(0,0,0,0.3);
+}
+
+/* 刘海 */
+.phone-frame::before{
+  content:'';
+  position:absolute;
+  top:12px;
+  left:50%;
+  transform:translateX(-50%);
+  width:160px;
+  height:30px;
+  background:#1c1c1e;
+  border-radius:0 0 20px 20px;
+  z-index:1000;
+}
+
+/* 听筒 */
+.phone-frame::after{
+  content:'';
+  position:absolute;
+  top:22px;
+  left:50%;
+  transform:translateX(-50%);
+  width:60px;
+  height:6px;
+  background:#0a0a0a;
+  border-radius:3px;
+  z-index:1001;
+}
+
+/* 屏幕容器 */
+.phone-screen{
+  position:relative;
+  width:100%;
+  height:100%;
+  background:var(--paper);
+  border-radius:45px;
+  overflow:hidden; /* 裁剪所有溢出内容 */
+  scrollbar-width:none; /* Firefox */
+  -ms-overflow-style:none; /* IE/Edge */
+}
+.phone-screen::-webkit-scrollbar{
+  display:none; /* Chrome/Safari/Opera */
+}
+.phone-screen.dark{background:var(--dark)}
+.phone-screen.dark .sheet{background:var(--dark);color:var(--snow);border-top-color:var(--snow)}
+
+/* 电源键 */
+.power-button{
+  position:absolute;
+  right:-3px;
+  top:200px;
+  width:3px;
+  height:100px;
+  background:#2c2c2e;
+  border-radius:0 2px 2px 0;
+}
+
+/* 音量键 */
+.volume-up{
+  position:absolute;
+  left:-3px;
+  top:160px;
+  width:3px;
+  height:60px;
+  background:#2c2c2e;
+  border-radius:2px 0 0 2px;
+}
+
+.volume-down{
+  position:absolute;
+  left:-3px;
+  top:240px;
+  width:3px;
+  height:60px;
+  background:#2c2c2e;
+  border-radius:2px 0 0 2px;
+}
+
+/* 静音键 */
+.mute-switch{
+  position:absolute;
+  left:-3px;
+  top:120px;
+  width:3px;
+  height:30px;
+  background:#2c2c2e;
+  border-radius:2px 0 0 2px;
+}
+
+.mono{font-family:"IBM Plex Mono","Menlo","Courier New",monospace}
+
+.app{
+  position:relative;
+  width:100%;
+  height:100%;
+  max-width:none;
+  margin:0;
+  min-height:auto;
+  display:grid;
+  grid-template-rows: auto 1fr auto; /* 顶部自动 / 中间自适应 / 底部自动 */
+  transition:background .35s ease,color .35s ease;
+  background:var(--paper);
+  overflow:hidden; /* app本身不滚动 */
+}
+.app::-webkit-scrollbar{display:none}
+.app.dark{background:var(--dark);color:var(--snow)}
+
+/* 三层布局架构 */
+.app-header{
+  padding:22px 26px 16px;
+  position:relative;
+  z-index:10;
+}
+
+.app-content{
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:0 26px;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+.app-content::-webkit-scrollbar{display:none}
+
+.app-footer{
+  padding:28px 26px 16px;
+  position:relative;
+  z-index:10;
+  background:linear-gradient(to bottom, transparent 0%, var(--paper) 10%, var(--paper) 100%);
+  transition:opacity .3s;
+}
+.app-footer.hidden{opacity:0;pointer-events:none}
+.app.dark .app-footer{
+  background:linear-gradient(to bottom, transparent 0%, var(--dark) 10%, var(--dark) 100%);
+}
+
+/* 角落标记 */
+.corner{line-height:.9;letter-spacing:-.02em}
+.corner.tl{font-family:"IBM Plex Mono","Menlo",monospace;font-weight:500;font-size:13px;letter-spacing:.14em;opacity:.75;float:left}
+.corner.tr{float:right;cursor:pointer;user-select:none;margin-top:-4px}
+.corner.tr svg{display:block;width:30px;height:30px}
+.corner.tr svg *{stroke:currentColor;fill:none;transition:stroke .3s,fill .3s}
+.corner.tr svg .solid{fill:currentColor;stroke:none}
+
+/* rail导航 */
+.rail{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.rail button{
+  background:none;border:0;padding:0;margin:0;cursor:pointer;font:inherit;color:inherit;text-align:left;
+  font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;
+  transition:opacity .2s,transform .15s;
+}
+.rail .muted{color:var(--ink-mute);font-weight:700}
+.app.dark .rail .muted{color:var(--snow-mute)}
+.rail button:active{transform:translateX(2px)}
+
+/* 屏幕 */
+.screen{display:none;flex-direction:column}
+.screen.active{display:flex}
+
+.meta{font-family:"IBM Plex Mono","Menlo",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;opacity:.5}
+.section{padding:22px 0;border-top:1px solid currentColor}
+.section-last{border-bottom:1px solid currentColor}
+.section .meta{margin-bottom:14px;display:block}
+
+/* 城市 */
+.city-row{display:flex;align-items:baseline;justify-content:space-between}
+.city-value{font-size:32px;font-weight:700;letter-spacing:-.025em;line-height:1.1}
+.city-change{background:none;border:0;padding:0;font:inherit;color:var(--ink-mute);cursor:pointer;font-size:16px;letter-spacing:.01em;transition:color .2s}
+.city-change:active{color:var(--ink)}
+.app.dark .city-change{color:var(--snow-mute)}
+.app.dark .city-change:active{color:var(--snow)}
+
+/* 目的地输入 */
+.where-input{
+  width:100%;background:transparent;border:0;outline:0;font:inherit;color:inherit;
+  font-size:32px;font-weight:700;letter-spacing:-.025em;line-height:1.15;padding:0;caret-color:currentColor;
+}
+.where-input::placeholder{color:var(--ink-mute);font-weight:700}
+.app.dark .where-input::placeholder{color:var(--snow-mute)}
+
+/* 输入提示 */
+.input-hint{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hint-tag{
+  background:none;border:1px solid currentColor;padding:4px 10px;border-radius:4px;
+  font-size:12px;letter-spacing:.01em;cursor:pointer;opacity:.4;transition:all .2s;
+  color:inherit;font-weight:500;
+}
+.hint-tag:hover{opacity:.8;transform:translateY(-1px)}
+.hint-tag:active{transform:translateY(0)}
+
+/* 状态选择 */
+.status-list{display:flex;flex-direction:column;gap:0;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.3}
+.status-list button{
+  background:none;border:0;padding:0;text-align:left;cursor:pointer;font:inherit;
+  color:var(--ink-mute);transition:color .2s;
+}
+.status-list button.on{color:var(--ink)}
+.app.dark .status-list button{color:var(--snow-mute)}
+.app.dark .status-list button.on{color:var(--snow)}
+
+/* 加载 */
+.loading{display:flex;flex-direction:column;justify-content:center;flex:1;padding:60px 0}
+.loading .big{font-size:34px;font-weight:700;letter-spacing:-.025em;line-height:1.1}
+.loading .sub{font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.55;margin-top:14px}
+.loading .big::after{content:'...';display:inline-block;width:.6ch;animation:d 1.2s steps(4,end) infinite}
+@keyframes d{0%{content:''}25%{content:'.'}50%{content:'..'}75%,100%{content:'...'}}
+
+/* 结果头 */
+.result-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px}
+.result-dest{font-size:9px;letter-spacing:.20em;text-transform:uppercase;opacity:.45}
+.result-dest .name{opacity:1;letter-spacing:.12em}
+
+/* 横向滑动 */
+.swiper{overflow:hidden;margin:0 -26px;padding:0 26px 140px;flex:1;display:flex;flex-direction:column}
+.track{display:flex;transition:transform .4s cubic-bezier(.2,.8,.2,1);touch-action:manipulation;flex:1}
+.slide{flex:0 0 100%;width:100%;padding-right:26px;box-sizing:border-box;display:flex;flex-direction:column;border-left:1px solid currentColor;padding-left:26px}
+.slide:first-child{border-left:0;padding-left:0}
+
+/* 分页指示器 */
+.page-bars{display:flex;gap:6px;margin-bottom:20px}
+.page-bars i{flex:1;height:2px;background:currentColor;opacity:.2;transition:opacity .25s,transform .15s;cursor:pointer}
+.page-bars i.on{opacity:1}
+.page-bars i:hover{opacity:.5;transform:scaleY(1.5)}
+
+/* 站点信息 */
+.station-meta{font-size:9px;letter-spacing:.20em;text-transform:uppercase;opacity:.45;margin-bottom:10px;display:flex;gap:10px}
+.station-meta .on{opacity:1}
+.station-name{font-size:14px;font-weight:400;opacity:.45;letter-spacing:-.01em;margin-bottom:4px}
+.exit-hero{font-size:88px;font-weight:700;letter-spacing:-.04em;line-height:.92;margin-bottom:6px}
+.exit-sub{font-size:13px;font-weight:400;opacity:.45;letter-spacing:-.01em;line-height:1.35;margin-bottom:24px;max-width:24ch}
+
+/* 指标 */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:14px 0 20px;border-top:1px solid currentColor;border-bottom:1px solid currentColor}
+.metric .k{font-size:9px;letter-spacing:.18em;text-transform:uppercase;opacity:.45;margin-bottom:6px}
+.metric .v{font-size:16px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.metric .v .u{font-size:11px;font-weight:400;opacity:.45;margin-left:2px;letter-spacing:0}
+.metric .bar{margin-top:8px;height:2px;background:currentColor;opacity:.18;position:relative;overflow:hidden}
+.metric .bar i{position:absolute;inset:0;background:currentColor;opacity:1;width:0;transition:width .9s cubic-bezier(.2,.8,.2,1);display:block}
+
+/* 进度路径 */
+/* 进度路径 */
+.path{margin:28px 0 24px}
+.path-visual{display:flex;align-items:center;justify-content:space-between}
+.path .node{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;max-width:90px}
+.path .node i{width:7px;height:7px;background:currentColor;border-radius:50%;transform:scale(.6);opacity:.35;transition:all .4s}
+.path .node.on i{transform:scale(1);opacity:1}
+.path .node .lb{font-size:9px;letter-spacing:.12em;text-transform:uppercase;margin-top:10px;line-height:1.3;opacity:.6}
+.path .node.on .lb{opacity:1}
+.path .node .d{font-size:9px;margin-top:2px;opacity:.35;font-family:"IBM Plex Mono","Menlo",monospace}
+.path .arrow{font-size:12px;letter-spacing:1px;color:currentColor;opacity:.25;margin:0 4px}
+
+/* 方位指引 */
+.direction{font-size:15px;font-weight:400;letter-spacing:-.01em;line-height:1.4;margin-bottom:24px;opacity:.85}
+.direction b{font-weight:700}
+
+/* 折叠面板 */
+.fold{border-top:1px solid currentColor}
+.fold + .fold{border-top:0}
+.fold:last-of-type{border-bottom:1px solid currentColor}
+.fold-head{
+  width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;
+  padding:14px 0;display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.7;
+}
+.fold-head .c{transition:transform .3s;font-size:14px;opacity:.6}
+.fold.open .fold-head .c{transform:rotate(45deg)}
+.fold.open .fold-head{opacity:1}
+.fold-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.fold.open .fold-body{max-height:1400px}
+.fold-inner{padding:0 0 20px}
+
+/* POI列表 */
+.poi{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid currentColor;cursor:pointer;transition:opacity .2s}
+.poi:active{opacity:.7}
+.fold-inner .poi:first-child{border-top:0;padding-top:4px}
+.poi-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.poi .n{font-size:15px;font-weight:700;letter-spacing:-.015em;line-height:1.2;flex:1;min-width:0}
+.poi .src{font-size:9px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;padding:2px 6px;border-radius:3px;border:1px solid #ff6b35;color:#ff6b35;font-weight:500;flex-shrink:0}
+.app.dark .poi .src{color:#ff8c5a;border-color:#ff8c5a}
+
+/* 时间轴 */
+.tl{display:flex;flex-direction:column;gap:2px}
+.tl-row{display:flex;gap:18px;padding:10px 0;align-items:baseline}
+.tl-time{flex:0 0 42px;font-family:"IBM Plex Mono","Menlo",monospace;font-size:10px;letter-spacing:.04em;opacity:.45;padding-top:3px}
+.tl-body{flex:1;min-width:0}
+.tl-title{font-size:14px;font-weight:700;letter-spacing:-.015em;line-height:1.3}
+.tl-title .xhs{border:0;cursor:pointer;padding:2px 6px;border:1px solid #ff6b35;color:#ff6b35;border-radius:3px;font-size:12px;letter-spacing:.02em;transition:opacity .2s}
+.tl-title .xhs:active{opacity:.7}
+.app.dark .tl-title .xhs{color:#ff8c5a;border-color:#ff8c5a}
+.tl-desc{font-size:12px;opacity:.55;margin-top:4px;letter-spacing:.01em;line-height:1.5}
+.tl-desc .hl{font-weight:700;opacity:.95}
+
+/* Sheet（小红书预览） */
+.sheet{
+  position:absolute;left:0;right:0;bottom:-100%;max-width:none;margin:0;
+  background:var(--paper);color:var(--ink);padding:26px 26px 40px;
+  max-height:80vh;overflow-y:auto;z-index:1000;
+  transition:bottom .35s cubic-bezier(.2,.8,.2,1);border-top:1px solid var(--ink);
+}
+.sheet.show{bottom:0}
+.sheet-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.7}
+.sheet-close{background:none;border:0;font:inherit;color:inherit;cursor:pointer;font-size:22px;line-height:1;padding:0}
+.sheet-author{font-size:13px;opacity:.6;margin-bottom:12px}
+.sheet-author b{color:var(--ink);opacity:1;font-weight:700;margin-right:8px;letter-spacing:.02em}
+.sheet-title{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:14px}
+.sheet-body{font-size:15px;line-height:1.55;opacity:.85;margin-bottom:22px}
+.sheet-placeholder{height:180px;background:var(--paper-2);display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.55;margin-bottom:18px}
+.sheet-stats{display:flex;gap:28px;padding-top:18px;border-top:1px solid var(--ink);font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.7}
+
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:999;opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.show{opacity:1;pointer-events:auto}
+
+/* 底部标记 */
+.marks{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:space-between;padding:0 26px;font-family:"IBM Plex Mono","Menlo",monospace;font-size:9px;opacity:.25;letter-spacing:.14em;pointer-events:none}
+.marks.hidden{display:none}
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <!-- 物理按键 -->
+  <div class="power-button"></div>
+  <div class="volume-up"></div>
+  <div class="volume-down"></div>
+  <div class="mute-switch"></div>
+  
+  <div class="phone-screen">
+    <div class="overlay" id="overlay"></div>
+
+    <!-- 小红书预览 -->
+    <aside class="sheet" id="sheet">
+      <div class="sheet-head">
+        <span>XIAOHONGSHU</span>
+        <button class="sheet-close" onclick="closeSheet()">×</button>
+      </div>
+      <div class="sheet-author"><b id="sheetAuthor">用户</b><span id="sheetTime">2天前</span></div>
+      <div class="sheet-title" id="sheetTitle">标题</div>
+      <div class="sheet-placeholder">[ 图片占位 ]</div>
+      <div class="sheet-body" id="sheetBody">内容...</div>
+      <div class="sheet-stats"><span>♡ 1,248</span><span>☰ 89</span><span>☆ 456</span></div>
+    </aside>
+
+    <main class="app" id="app">
+  <!-- 顶部固定区 -->
+  <div class="app-header">
+    <div class="corner tl mono">EXIT NOW</div>
+    <div class="corner tr" id="themeToggle" title="切换主题">
+      <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <rect x="21" y="3" width="8" height="26" stroke-width="2"/>
+        <path d="M15 16 L25 16 M21 12 L25 16 L21 20" stroke-width="2" stroke-linecap="square"/>
+        <circle class="solid" cx="6" cy="7" r="2.2"/>
+        <path d="M3 24 L7 17 L10 19 L13 26 M10 19 L14 13 L10 10 L5 12 M14 13 L18 15" stroke-width="2" stroke-linecap="square"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 中部内容区（可滚动） -->
+  <div class="app-content">
+    <!-- 输入屏幕 -->
+    <section class="screen active" id="screenInput">
+      <div class="section">
+        <span class="meta">CITY</span>
+        <div class="city-row">
+          <div class="city-value" id="cityValue">北京</div>
+          <button class="city-change" id="cityChange">切换</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <span class="meta">WHERE</span>
+        <input class="where-input" id="destInput" placeholder="type a place" autocomplete="off">
+        <div class="input-hint" id="destHint">
+          <!-- 动态生成目的地标签 -->
+        </div>
+      </div>
+
+      <div class="section section-last">
+        <span class="meta">I'M</span>
+        <div class="status-list" id="statusList">
+          <button data-status="luggage">with luggage.</button>
+          <button data-status="hurry">in a hurry.</button>
+          <button data-status="photo">here to shoot.</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 结果屏幕 -->
+    <section class="screen" id="screenResult"><div id="resultContent"></div></section>
+  </div>
+
+  <!-- 底部固定区 -->
+  <div class="app-footer">
+    <div class="rail" id="rail"><button id="goBtn">exit now →</button></div>
+  </div>
+
+  <div class="marks mono"><span>— — —</span><span id="markCity">BEIJING</span></div>
+</main>
+  </div>
+</div>
+
+<script>
+const state = {
+  city:'北京', cityEn:'BEIJING',
+  statuses:new Set(),
+  stations:[], curr:0,
+  theme:'light'
+};
+
+// 本地数据库：目的地 → 出口推荐（MVP版本，无需API）
+const destinationDB = {
+  '北京': {
+    '三里屯太古里': {
+      fast: {
+        stationName: '团结湖站',
+        exitName: 'B口',
+        distance: '200m',
+        reason: '直达太古里北区，人少路近⚡',
+        spots: [
+          {name: 'Manner Coffee', emoji: '☕', desc: '隐藏在梧桐树下的宝藏咖啡店', stats: '8000+推荐', source: '小红书', preview: '每次去三里屯必打卡的小店～拿铁奶泡绵密到起飞，早上8点去完全不用排队，店员小姐姐超温柔💕'},
+          {name: '%Arabica', emoji: '🌿', desc: '超好拍的ins风咖啡店', stats: '5000+推荐', source: '小红书', preview: '白色极简装修太出片了！手冲咖啡豆子很新鲜，坐在窗边看三里屯的人来人往，氛围感拉满✨'}
+        ]
+      },
+      luggage: {
+        stationName: '团结湖站',
+        exitName: 'A口',
+        distance: '280m',
+        reason: '全程电梯，无障碍直达🛗',
+        spots: [
+          {name: '喜茶', emoji: '🍵', desc: '拖着箱子也能轻松取茶', stats: '6000+推荐', source: '大众点评', preview: '多肉葡萄永远的神！店员看我拖箱子主动帮我拿，服务太贴心了👍'},
+          {name: 'Blueglass', emoji: '🥤', desc: '网红果汁店', stats: '3000+推荐', source: '小红书', preview: '橙汁现榨超新鲜～vitamin C补满🍊'}
+        ]
+      },
+      photo: {
+        stationName: '东大桥站',
+        exitName: 'C口',
+        distance: '350m',
+        reason: '路过网红街拍地，超好出片📸',
+        spots: [
+          {name: '银杏大道', emoji: '🍂', desc: '秋天满地金黄，随手拍都是大片', stats: '12000+推荐', source: '小红书', preview: '十月中下旬来绝了！阳光洒在银杏叶上bling bling的，建议穿浅色系衣服超级出片📸'},
+          {name: 'Cycle & Cycle', emoji: '🚲', desc: '复古自行车咖啡店', stats: '4000+推荐', source: '小红书', preview: '老板养的猫咪超亲人～拍照记得带35mm定焦😻'}
+        ]
+      }
+    },
+    '故宫': {
+      fast: {
+        stationName: '天安门东站',
+        exitName: 'A口',
+        distance: '150m',
+        reason: '最近的故宫入口，省时省力⚡',
+        spots: [
+          {name: '角楼咖啡', emoji: '☕', desc: '故宫文创咖啡，环境绝美', stats: '10000+推荐', source: '小红书', preview: '红墙金瓦配咖啡绝了！拿铁上的故宫拉花太可爱，38元一杯还送故宫书签🏛️'}
+        ]
+      },
+      luggage: {
+        stationName: '天安门西站',
+        exitName: 'B口',
+        distance: '200m',
+        reason: '电梯直达，可寄存行李🎒',
+        spots: [
+          {name: '故宫行李寄存处', emoji: '🎒', desc: '小件10元，大件20元', stats: '官方服务', source: '官方', preview: '就在入口旁边超方便！工作人员态度很好📋'}
+        ]
+      },
+      photo: {
+        stationName: '天安门东站',
+        exitName: 'C口',
+        distance: '300m',
+        reason: '途经最佳拍照角度，红墙取景📷',
+        spots: [
+          {name: '东华门红墙', emoji: '🧱', desc: '小红书超火机位，游客少', stats: '15000+推荐', source: '小红书', preview: '早上7-8点光线最好！穿明黄色或白色衣服最出片📷'}
+        ]
+      }
+    }
+  },
+  '上海': {
+    '上海文化广场': {
+      fast: {
+        stationName: '陕西南路站',
+        exitName: '6号口',
+        distance: '80m',
+        reason: '直线距离最短，2分钟到达⚡',
+        spots: [
+          {name: 'Manner Coffee', emoji: '☕', desc: '复兴中路网红咖啡', stats: '5000+推荐', source: '小红书', preview: '生椰拿铁yyds！每次看演出前必买，梧桐树下的小店氛围感满分🌳'}
+        ]
+      },
+      luggage: {
+        stationName: '陕西南路站',
+        exitName: '1号口',
+        distance: '180m',
+        reason: '有直梯，路面平整好推箱子🛗',
+        spots: [
+          {name: '全家便利店', emoji: '🏪', desc: '可寄存小件行李', stats: '便民服务', source: '官方', preview: '店员说小箱子可以帮忙看着很人性化👍'}
+        ]
+      },
+      photo: {
+        stationName: '复兴中路站',
+        exitName: '3号口',
+        distance: '350m',
+        reason: '途经梧桐树荫道，法租界风情📸',
+        spots: [
+          {name: '思南公馆', emoji: '🏛️', desc: '老洋房改造，复古风拍照圣地', stats: '20000+推荐', source: '小红书', preview: '下午3点阳光打在红砖墙上太美了～建议穿复古碎花裙📸'}
+        ]
+      }
+    }
+  },
+  '广州': {
+    '广州塔': {
+      fast: {
+        stationName: '广州塔站',
+        exitName: 'A口',
+        distance: '100m',
+        reason: '出站即到，无需绕路⚡',
+        spots: [
+          {name: '喜茶Lab', emoji: '🍵', desc: '广州塔限定店', stats: '8000+推荐', source: '小红书', preview: '多肉葡萄加椰椰绝配～坐在落地窗边看小蛮腰📸'}
+        ]
+      },
+      luggage: {
+        stationName: '广州塔站',
+        exitName: 'B口',
+        distance: '150m',
+        reason: '有电梯，塔下有寄存处🎒',
+        spots: [
+          {name: '广州塔行李寄存', emoji: '🎒', desc: '小件15元，大件25元', stats: '官方服务', source: '官方', preview: '就在一楼大厅，刷脸取件很方便～'}
+        ]
+      },
+      photo: {
+        stationName: '广州塔站',
+        exitName: 'C口',
+        distance: '300m',
+        reason: '最佳拍摄角度，江边取景📷',
+        spots: [
+          {name: '珠江边栈道', emoji: '🌊', desc: '超火拍照机位', stats: '18000+推荐', source: '小红书', preview: '黄昏时分拍日落超美！天空是渐变的粉紫色📷'}
+        ]
+      }
+    }
+  }
+};
+
+const cities = [
+  {cn:'北京',en:'BEIJING'},
+  {cn:'上海',en:'SHANGHAI'},
+  {cn:'广州',en:'GUANGZHOU'},
+  {cn:'深圳',en:'SHENZHEN'},
+  {cn:'成都',en:'CHENGDU'}
+];
+let cityIndex = 0;
+
+function init(){
+  document.getElementById('statusList').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-status]');if(!b)return;
+    const k=b.dataset.status;
+    if(state.statuses.has(k)){
+      state.statuses.delete(k);
+      b.classList.remove('on');
+    }else{
+      state.statuses.add(k);
+      b.classList.add('on');
+    }
+  });
+
+  document.getElementById('goBtn').addEventListener('click',go);
+  document.getElementById('destInput').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+  document.getElementById('overlay').addEventListener('click',closeSheet);
+  document.getElementById('themeToggle').addEventListener('click',toggleTheme);
+  
+  document.getElementById('cityChange').addEventListener('click',()=>{
+    cityIndex = (cityIndex + 1) % cities.length;
+    state.city = cities[cityIndex].cn;
+    state.cityEn = cities[cityIndex].en;
+    document.getElementById('cityValue').textContent = state.city;
+    document.getElementById('markCity').textContent = state.cityEn;
+    updateDestHints(); // 更新目的地提示
+  });
+  
+  // 初始化显示当前城市的目的地
+  updateDestHints();
+}
+
+// 更新目的地提示标签
+function updateDestHints(){
+  const cityDests = destinationDB[state.city] || {};
+  const dests = Object.keys(cityDests);
+  const hintHTML = dests.map(d => 
+    `<button class="hint-tag" onclick="fillDest('${d}')">${d}</button>`
+  ).join('');
+  
+  const hintContainer = document.getElementById('destHint');
+  if(hintContainer){
+    hintContainer.innerHTML = hintHTML;
+  }
+}
+
+function toggleTheme(){
+  state.theme = state.theme==='light'?'dark':'light';
+  const isDark = state.theme==='dark';
+  document.getElementById('app').classList.toggle('dark', isDark);
+  document.querySelector('.phone-screen').classList.toggle('dark', isDark);
+}
+
+async function go(){
+  const dest = document.getElementById('destInput').value.trim();
+  if(!dest){alert('请输入目的地');return;}
+  
+  // 隐藏底部标记和footer
+  document.querySelector('.marks').classList.add('hidden');
+  document.querySelector('.app-footer').classList.add('hidden');
+  
+  // 切换到深色模式
+  if(state.theme === 'light'){
+    toggleTheme();
+  }
+  
+  document.getElementById('screenInput').classList.remove('active');
+  document.getElementById('screenResult').classList.add('active');
+  document.getElementById('resultContent').innerHTML = '<div class="loading"><div class="big">analyzing</div><div class="sub mono">BEST EXIT</div></div>';
+  
+  try{
+    const res = await askClaude(state.city, dest, Array.from(state.statuses));
+    state.stations = res.stations;
+    state.curr = 0;
+    renderResult(res);
+  }catch(err){
+    console.error('查询失败：', err);
+    const errorMsg = err.message || '系统错误';
+    document.getElementById('resultContent').innerHTML = `
+      <div class="loading">
+        <div class="big">failed.</div>
+        <div class="sub mono">${errorMsg}</div>
+      </div>`;
+    
+    // 错误时显示footer并更新rail
+    document.querySelector('.app-footer').classList.remove('hidden');
+    document.getElementById('rail').innerHTML = `
+      <button onclick="resetAll()">try again</button>
+      <button class="muted" onclick="resetAll()">← back</button>
+    `;
+  }
+}
+
+// 本地推荐引擎（替代AI API）
+async function askClaude(city, dest, statuses){
+  // 模拟API延迟，增加真实感
+  await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+  
+  // 查找目的地数据
+  const cityData = destinationDB[city];
+  if(!cityData){
+    throw new Error(`暂不支持${city}，请选择北京/上海/广州`);
+  }
+  
+  // 模糊匹配目的地（支持关键词）
+  let destData = null;
+  let matchedDest = '';
+  for(const [key, value] of Object.entries(cityData)){
+    if(dest.includes(key) || key.includes(dest)){
+      destData = value;
+      matchedDest = key;
+      break;
+    }
+  }
+  
+  if(!destData){
+    const suggestions = Object.keys(cityData).join(' / ');
+    throw new Error(`未找到"${dest}"😅\n\n试试这些热门地点：\n${suggestions}`);
+  }
+  
+  // 决策逻辑：根据用户状态选择最佳出口
+  let selectedExit = null;
+  let strategy = 'fast'; // 默认最快
+  
+  if(statuses.includes('hurry')){
+    strategy = 'fast';  // 赶时间 → 最快出口
+  }else if(statuses.includes('luggage')){
+    strategy = 'luggage';  // 拖行李 → 有电梯出口
+  }else if(statuses.includes('photo')){
+    strategy = 'photo';  // 想打卡 → 拍照出口
+  }
+  
+  selectedExit = destData[strategy];
+  
+  // 构建返回数据（符合原有格式）
+  const crowdLevel = strategy === 'fast' ? 2 : strategy === 'luggage' ? 1 : 3;
+  
+  return {
+    destination: matchedDest,
+    stations: [{
+      stationName: selectedExit.stationName,
+      exitName: selectedExit.exitName,
+      isPrimary: true,
+      metrics: {
+        crowdLevel: crowdLevel,
+        distance: selectedExit.distance,
+        accessibility: strategy === 'luggage'
+      },
+      pathNodes: [
+        {label: "出站", distance: ""},
+        {label: selectedExit.reason, distance: selectedExit.distance},
+        {label: matchedDest, distance: ""}
+      ],
+      direction: `出站后${selectedExit.reason}`,
+      alongRoute: selectedExit.spots.map(s => ({
+        name: s.name,
+        desc: s.desc,
+        source: s.source,
+        stats: s.stats,
+        postPreview: s.preview
+      })),
+      timeline: [
+        {time: "0'", title: `从${selectedExit.exitName}出站`, desc: "沿指示牌前行", isXhs: false},
+        ...selectedExit.spots.slice(0,2).map((s,i) => ({
+          time: `${i+1}'`,
+          title: s.name,
+          desc: `${s.emoji} ${s.desc}`,
+          isXhs: true,
+          postPreview: s.preview
+        })),
+        {time: `${selectedExit.spots.length + 1}'`, title: `到达${matchedDest}`, desc: "准备开始探索吧", isXhs: false}
+      ]
+    }]
+  };
+}
+
+function renderResult(res){
+  // 数据验证
+  if(!res || !res.stations || !Array.isArray(res.stations) || res.stations.length === 0){
+    console.error('renderResult收到无效数据：', res);
+    document.getElementById('resultContent').innerHTML = '<div class="loading"><div class="big">数据错误</div><div class="sub mono">请重试</div></div>';
+    document.getElementById('rail').innerHTML = '<button onclick="resetAll()">← back</button>';
+    document.querySelector('.app-footer').classList.remove('hidden');
+    return;
+  }
+  
+  // 切换回浅色模式
+  if(state.theme === 'dark'){
+    toggleTheme();
+  }
+  
+  const stations = res.stations;
+  const bars = stations.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('');
+  const slides = stations.map((st,i)=>slideHTML(st,i)).join('');
+  
+  document.getElementById('resultContent').innerHTML = `
+    <div class="result-head">
+      <div class="result-dest">DEST / <span class="name">${esc(res.destination)}</span></div>
+      <div class="result-dest mono">${pad(state.curr+1)} / ${pad(stations.length)}</div>
+    </div>
+    ${stations.length>1?`<div class="page-bars" id="pageBars">${bars}</div>`:''}
+    <div class="swiper" id="swiper"><div class="track" id="track">${slides}</div></div>`;
+  
+  // 更新底部rail内容
+  document.getElementById('rail').innerHTML = `
+    <button onclick="resetAll()">choose again</button>
+    <button class="muted" onclick="resetAll()">← back</button>`;
+  
+  // 显示footer
+  document.querySelector('.app-footer').classList.remove('hidden');
+  
+  if(stations.length>1) bindSwipe();
+  setTimeout(()=>{
+    animateSlide(0);
+  },120);
+}
+
+function slideHTML(st, idx){
+  const crowdText = ['empty','quiet','medium','busy','packed'][Math.max(0,Math.min(4,(st.metrics.crowdLevel||3)-1))];
+  const crowdPct = Math.max(0,Math.min(100,(st.metrics.crowdLevel||3)/5*100));
+  
+  // 生成路径：节点和箭头交替
+  const pathHTML = st.pathNodes.map((n,i)=>{
+    const nodeHTML = `
+      <div class="node ${i===0?'on':''}" data-slide="${idx}" data-node="${i}">
+        <i></i>
+        <div class="lb">${esc(n.label)}</div>
+        ${n.distance?`<div class="d">${esc(n.distance)}</div>`:''}
+      </div>
+    `;
+    const arrowHTML = i < st.pathNodes.length-1 ? '<span class="arrow">›››</span>' : '';
+    return nodeHTML + arrowHTML;
+  }).join('');
+  
+  const poisHTML = st.alongRoute?st.alongRoute.map((poi,pi)=>`
+    <div class="poi" onclick='showPOI(${idx},${pi})'>
+      <div class="poi-header">
+        <div class="n">${esc(poi.name)}</div>
+        <div class="src">${esc(poi.source)}</div>
+      </div>
+      <small style="font-size:11px;opacity:.55">${esc(poi.desc)} · ${esc(poi.stats)}</small>
+    </div>
+  `).join(''):'';
+  
+  const timelineHTML = st.timeline.map((t,ti)=>`
+    <div class="tl-row">
+      <div class="tl-time">${esc(t.time)}</div>
+      <div class="tl-body">
+        <div class="tl-title">${t.isXhs?`<span class="xhs" onclick='showTimeline(${idx},${ti})'>${esc(t.title)}</span>`:esc(t.title)}</div>
+        ${t.desc?`<div class="tl-desc">${enhanceDesc(t.desc)}</div>`:''}
+      </div>
+    </div>
+  `).join('');
+  
+  return `
+    <div class="slide">
+      <div class="station-meta">
+        <span>${esc(st.stationName)}</span>
+        ${st.isPrimary?'<span class="on">PRIMARY</span>':'<span>ALTERNATIVE</span>'}
+      </div>
+      <div class="station-name"></div>
+      <div class="exit-hero">${esc(st.exitName)}</div>
+      <div class="exit-sub"></div>
+      
+      <div class="metrics">
+        <div class="metric">
+          <div class="k mono">拥挤度</div>
+          <div class="v">${crowdText}</div>
+          <div class="bar"><i style="width:0" data-slide="${idx}" data-w="${crowdPct}%"></i></div>
+        </div>
+        <div class="metric">
+          <div class="k mono">距离</div>
+          <div class="v">${esc(st.metrics.distance||'—')}</div>
+        </div>
+        <div class="metric">
+          <div class="k mono">无障碍设施</div>
+          <div class="v">${st.metrics.accessibility?'YES':'NO'}</div>
+        </div>
+      </div>
+      
+      <div class="path">
+        <div class="path-visual">${pathHTML}</div>
+      </div>
+      
+      <div class="direction"><b>出站后：</b>${esc(st.direction)}</div>
+      
+      <div class="fold" id="fold1_${idx}">
+        <button class="fold-head" onclick="toggleFold('fold1_${idx}')"><span class="mono">详细路径</span><span class="c">+</span></button>
+        <div class="fold-body"><div class="fold-inner"><div class="tl">${timelineHTML}</div></div></div>
+      </div>
+      
+      ${poisHTML?`
+        <div class="fold" id="fold2_${idx}">
+          <button class="fold-head" onclick="toggleFold('fold2_${idx}')"><span class="mono">沿途小红书推荐点</span><span class="c">+</span></button>
+          <div class="fold-body"><div class="fold-inner">${poisHTML}</div></div>
+        </div>
+      `:''}
+    </div>
+  `;
+}
+
+function animateSlide(idx){
+  setTimeout(()=>{
+    document.querySelectorAll(`.metric .bar i[data-slide="${idx}"]`).forEach(el=>{
+      el.style.width = el.dataset.w;
+    });
+    document.querySelectorAll(`.node[data-slide="${idx}"]`).forEach((n,i)=>{
+      setTimeout(()=>n.classList.add('on'), i*300);
+    });
+  },100);
+}
+
+function bindSwipe(){
+  // 只保留点击分页指示器功能
+  const pageBars = document.getElementById('pageBars');
+  if(pageBars){
+    pageBars.querySelectorAll('i').forEach((dot,idx)=>{
+      dot.addEventListener('click',()=>{
+        state.curr=idx;
+        updateSwipe();
+      });
+    });
+  }
+}
+
+function updateSwipe(){
+  const track = document.getElementById('track');
+  track.style.transform = `translateX(-${state.curr*100}%)`;
+  
+  document.querySelectorAll('.page-bars i').forEach((dot,i)=>{
+    dot.classList.toggle('on', i===state.curr);
+  });
+  
+  const head = document.querySelector('.result-head .result-dest.mono');
+  if(head) head.textContent = `${pad(state.curr+1)} / ${pad(state.stations.length)}`;
+  
+  setTimeout(()=>{
+    animateSlide(state.curr);
+  },300);
+}
+
+function toggleFold(id){
+  const fold = document.getElementById(id);
+  fold.classList.toggle('open');
+}
+
+function showPOI(stIdx, poiIdx){
+  const poi = state.stations[stIdx].alongRoute[poiIdx];
+  document.getElementById('sheetTitle').textContent = poi.name;
+  document.getElementById('sheetBody').textContent = poi.postPreview||'暂无内容';
+  document.getElementById('sheetAuthor').textContent = '小红书用户';
+  document.getElementById('sheetTime').textContent = '2天前';
+  document.getElementById('sheet').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function showTimeline(stIdx, tIdx){
+  const t = state.stations[stIdx].timeline[tIdx];
+  document.getElementById('sheetTitle').textContent = t.title;
+  document.getElementById('sheetBody').textContent = t.postPreview||'暂无内容';
+  document.getElementById('sheetAuthor').textContent = '小红书用户';
+  document.getElementById('sheetTime').textContent = '2天前';
+  document.getElementById('sheet').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closeSheet(){
+  document.getElementById('sheet').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// 快速填充目的地
+function fillDest(dest){
+  document.getElementById('destInput').value = dest;
+  document.getElementById('destInput').focus();
+}
+
+function resetAll(){
+  document.getElementById('screenResult').classList.remove('active');
+  document.getElementById('screenInput').classList.add('active');
+  document.querySelectorAll('.status-list button').forEach(b=>b.classList.remove('on'));
+  state.statuses.clear();
+  document.getElementById('destInput').value='';
+  state.stations=[];state.curr=0;
+  // 显示底部标记
+  document.querySelector('.marks').classList.remove('hidden');
+  // 显示footer
+  document.querySelector('.app-footer').classList.remove('hidden');
+  // 恢复rail为exit now按钮
+  document.getElementById('rail').innerHTML = '<button id="goBtn">exit now →</button>';
+  // 重新绑定goBtn
+  document.getElementById('goBtn').addEventListener('click', go);
+}
+
+function esc(s){return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function pad(n){return String(n).padStart(2,'0')}
+function enhanceDesc(s){return String(s).replace(/(\d+\+?)/g,'<span class="hl">$1</span>')}
+
+init();
+</script>
+</body>
+</html>
